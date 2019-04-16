@@ -131,18 +131,18 @@ const DFPManager = Object.assign(new EventEmitter().setMaxListeners(0), {
           pubadsService.setRequestNonPersonalizedAds(
             this.personalizedAdsEnabled() ? 0 : 1,
           );
-          const targetingArguments = this.getTargetingArguments();
-          // set global targetting arguments
-          Object.keys(targetingArguments).forEach((varName) => {
-            if (pubadsService) {
-              pubadsService.setTargeting(varName, targetingArguments[varName]);
-            }
-          });
-          // set global adSense attributes
-          const adSenseAttributes = this.getAdSenseAttributes();
-          Object.keys(adSenseAttributes).forEach((key) => {
-            pubadsService.set(key, adSenseAttributes[key]);
-          });
+          // const targetingArguments = this.getTargetingArguments();
+          // // set global targetting arguments
+          // Object.keys(targetingArguments).forEach((varName) => {
+          //   if (pubadsService) {
+          //     pubadsService.setTargeting(varName, targetingArguments[varName]);
+          //   }
+          // });
+          // // set global adSense attributes
+          // const adSenseAttributes = this.getAdSenseAttributes();
+          // Object.keys(adSenseAttributes).forEach((key) => {
+          //   pubadsService.set(key, adSenseAttributes[key]);
+          // });
         });
       });
     }
@@ -231,23 +231,8 @@ const DFPManager = Object.assign(new EventEmitter().setMaxListeners(0), {
             }
           });
         });
-
+        this.configureOptions(googletag);
         googletag.cmd.push(() => {
-          if (this.lazyLoadIsEnabled()) {
-            const args = [];
-            const config = this.getLazyLoadConfig();
-            if (config !== null) {
-              args.push(config);
-            }
-            googletag.pubads().enableLazyLoad.call(args);
-          }
-          if (this.singleRequestIsEnabled()) {
-            googletag.pubads().enableSingleRequest();
-          }
-          if (this.collapseEmptyDivs === true || this.collapseEmptyDivs === false) {
-            googletag.pubads().collapseEmptyDivs(this.collapseEmptyDivs);
-          }
-
           googletag.enableServices();
           slotsToInitialize.forEach((theSlotId) => {
             googletag.display(theSlotId);
@@ -255,6 +240,41 @@ const DFPManager = Object.assign(new EventEmitter().setMaxListeners(0), {
           resolve();
         });
       });
+    });
+  },
+
+  configureOptions(googletag) {
+    googletag.cmd.push(() => {
+      const pubadsService = googletag.pubads();
+      pubadsService.setRequestNonPersonalizedAds(
+        this.personalizedAdsEnabled() ? 0 : 1,
+      );
+      const targetingArguments = this.getTargetingArguments();
+      // set global targetting arguments
+      Object.keys(targetingArguments).forEach((varName) => {
+        if (pubadsService) {
+          pubadsService.setTargeting(varName, targetingArguments[varName]);
+        }
+      });
+      // set global adSense attributes
+      const adSenseAttributes = this.getAdSenseAttributes();
+      Object.keys(adSenseAttributes).forEach((key) => {
+        pubadsService.set(key, adSenseAttributes[key]);
+      });
+      if (this.lazyLoadIsEnabled()) {
+        const args = [];
+        const config = this.getLazyLoadConfig();
+        if (config !== null) {
+          args.push(config);
+        }
+        pubadsService.enableLazyLoad.call(args);
+      }
+      if (this.singleRequestIsEnabled()) {
+        pubadsService.enableSingleRequest();
+      }
+      if (this.collapseEmptyDivs === true || this.collapseEmptyDivs === false) {
+        pubadsService.collapseEmptyDivs(this.collapseEmptyDivs);
+      }
     });
   },
 
@@ -293,11 +313,9 @@ const DFPManager = Object.assign(new EventEmitter().setMaxListeners(0), {
 
   gptRefreshAds(slots) {
     return this.getGoogletag().then((googletag) => {
+      this.configureOptions(googletag);
       googletag.cmd.push(() => {
         const pubadsService = googletag.pubads();
-        pubadsService.setRequestNonPersonalizedAds(
-          this.personalizedAdsEnabled() ? 0 : 1,
-        );
         pubadsService.refresh(
           slots.map(slotId => registeredSlots[slotId].gptSlot),
         );
